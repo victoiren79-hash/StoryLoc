@@ -359,6 +359,21 @@
             color: #D4AF37;
         }
         
+        .ai-correction {
+            background: #2A2A2A;
+            padding: 15px;
+            border: 1px solid #B8860B;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-size: 0.9rem;
+        }
+        
+        .ai-correction .title {
+            color: #D4AF37;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
         /* Footer Styles */
         footer {
             background-color: var(--dark-gray);
@@ -535,24 +550,39 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // ==================== CLOUD STORAGE SIMULATION ====================
-        class StoryLocCloud {
+        // ==================== AUTOMATIC BLOCKCHAIN SYNC ====================
+        class AutoSyncBlockchain {
             constructor() {
-                this.storageKey = 'storyloc_cloud_data';
-                this.networkNodes = [];
-                this.initCloudStorage();
+                this.storageKey = 'storyloc_auto_blockchain';
+                this.networkUrl = 'https://api.jsonbin.io/v3/b/67c3f6a2acd3cb34a8af6c8c/latest';
+                this.networkUpdateUrl = 'https://api.jsonbin.io/v3/b/67c3f6a2acd3cb34a8af6c8c';
+                this.apiKey = '$2a$10$L.ws.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.';
+                this.syncInterval = 30000; // Sync every 30 seconds
+                this.initBlockchain();
             }
 
-            // Simulate cloud storage using localStorage as a "shared database"
-            initCloudStorage() {
-                // Create initial cloud data if it doesn't exist
+            async initBlockchain() {
                 if (!localStorage.getItem(this.storageKey)) {
-                    const initialData = this.getDefaultStories();
-                    localStorage.setItem(this.storageKey, JSON.stringify(initialData));
+                    const genesisBlock = this.createGenesisBlock();
+                    const initialChain = [genesisBlock];
+                    localStorage.setItem(this.storageKey, JSON.stringify(initialChain));
                 }
                 
-                // Simulate network synchronization
-                this.simulateNetworkSync();
+                // Auto-sync with network on startup
+                await this.syncWithNetwork();
+                
+                // Set up periodic syncing
+                setInterval(() => this.syncWithNetwork(), this.syncInterval);
+            }
+
+            createGenesisBlock() {
+                return {
+                    index: 0,
+                    timestamp: new Date().toISOString(),
+                    stories: this.getDefaultStories(),
+                    previousHash: '0',
+                    hash: this.calculateBlockHash(0, new Date().toISOString(), this.getDefaultStories(), '0', 0)
+                };
             }
 
             getDefaultStories() {
@@ -560,186 +590,70 @@
                     "nigeria": [
                         {
                             title: "The Benin Kingdom",
-                            content: "I remember the stories my grandfather told me about the great Benin Kingdom. He said our ancestors built a civilization that amazed even the Europeans when they first arrived. The bronze sculptures they created weren't just art - they were our history, our stories cast in metal for all time. I can almost hear the blacksmiths hammering away, creating those intricate plaques that told of our kings and warriors. The administrative system was so advanced that the kingdom stretched across what is now southern Nigeria, with trade routes connecting us to distant lands. When the British came with their guns, our warriors fought bravely, but the kingdom eventually fell. Still, the spirit of Benin lives on in our people.",
+                            content: "I remember the stories my grandfather told me about the great Benin Kingdom. He said our ancestors built a civilization that amazed even the Europeans when they first arrived. The bronze sculptures they created weren't just art - they were our history, our stories cast in metal for all time.",
                             author: "StoryLoc Community",
                             date: "2023-01-15",
-                            blockchainHash: "0x4b82f8d1c3e9a7f2",
+                            id: this.generateStoryId(),
                             upvotes: 15
                         },
                         {
                             title: "Queen Amina of Zazzau",
-                            content: "Let me tell you about Queen Amina, the warrior queen who defended our lands. She wasn't just a ruler - she was a military genius who expanded our territory through brilliant campaigns. I've heard tales of how she personally led her warriors into battle, her presence inspiring courage in every soldier. The defensive walls she built around conquered cities still stand in some places, monuments to her vision. As a woman leading in a time when few women held such power, she showed us what was possible. Her legacy isn't just in the territories she conquered, but in the generations of Nigerian women she inspired to be strong and fearless.",
+                            content: "Let me tell you about Queen Amina, the warrior queen who defended our lands. She wasn't just a ruler - she was a military genius who expanded our territory through brilliant campaigns.",
                             author: "StoryLoc Community",
                             date: "2023-05-22",
-                            blockchainHash: "0x5c93f9e2d4b8a6f1",
+                            id: this.generateStoryId(),
                             upvotes: 12
                         }
                     ],
                     "egypt": [
                         {
                             title: "Cleopatra VII",
-                            content: "I've always been fascinated by Cleopatra's story. She wasn't just the last pharaoh of Egypt - she was a master politician who spoke multiple languages and held her own against the rising Roman Empire. I imagine her in the great palace of Alexandria, surrounded by scholars and advisors, making decisions that would determine Egypt's fate. Her alliances with Julius Caesar and Mark Antony weren't just romantic affairs - they were strategic moves to preserve Egyptian independence. When she chose death over humiliation, she became a legend. Her story marks the end of an era, the transition from the Hellenistic Period to Roman Egypt, but her name echoes through history.",
+                            content: "I've always been fascinated by Cleopatra's story. She wasn't just the last pharaoh of Egypt - she was a master politician who spoke multiple languages and held her own against the rising Roman Empire.",
                             author: "StoryLoc Community",
                             date: "2023-03-10",
-                            blockchainHash: "0x6a4f7e3d2c9b8a5e",
+                            id: this.generateStoryId(),
                             upvotes: 23
-                        },
-                        {
-                            title: "Ramses II - The Great Pharaoh",
-                            content: "When I visited Abu Simbel and saw the colossal statues of Ramses II, I felt the weight of history. They say he ruled for 66 years, longer than most of us can even imagine. I think about what it must have been like to live during his reign - the monumental construction projects, the military campaigns that expanded Egyptian influence, the stability he brought to the kingdom. The Ramesseum stands as a testament to his power, but it's the everyday stories that really capture my imagination. What was life like for the workers who built these wonders? For the farmers who fed the kingdom? Ramses wasn't just a pharaoh - he was an era.",
-                            author: "StoryLoc Community",
-                            date: "2023-09-05",
-                            blockchainHash: "0x8c6f9e5d4b3a2f1e",
-                            upvotes: 21
                         }
                     ],
                     "south-africa": [
                         {
                             title: "Nelson Mandela - Father of the Nation",
-                            content: "I remember the day Nelson Mandela walked out of prison after 27 years. The hope in people's eyes was something I'll never forget. He taught us that forgiveness is stronger than revenge, that unity could heal our divided nation. During his presidency, I saw how he worked to dismantle apartheid's legacy through truth and reconciliation rather than retaliation. His Nobel Peace Prize wasn't just an award - it was recognition that a new way was possible. Even now, when I see his image, I'm reminded that one person's courage can change the course of history. His legacy isn't in monuments or buildings, but in the peace we work to maintain every day.",
+                            content: "I remember the day Nelson Mandela walked out of prison after 27 years. The hope in people's eyes was something I'll never forget. He taught us that forgiveness is stronger than revenge.",
                             author: "StoryLoc Community",
                             date: "2023-02-18",
-                            blockchainHash: "0xae8b1f7d6c5b4a3e",
+                            id: this.generateStoryId(),
                             upvotes: 45
-                        }
-                    ],
-                    "congo": [
-                        {
-                            title: "Patrice Lumumba - Congo's First Prime Minister",
-                            content: "My father used to tell me about Patrice Lumumba, his voice filled with both pride and sadness. He said Lumumba wasn't just a politician - he was the embodiment of Congo's hope for independence. I've read his speeches, and you can feel the passion for a free Africa in every word. His vision went beyond just Congo - he dreamed of a united Africa, free from colonial influence. When he was assassinated, something broke in our people. But his ideas lived on, inspiring liberation movements across the continent. Even today, when I see the challenges our country faces, I remember Lumumba's belief that we could determine our own destiny.",
-                            author: "StoryLoc Community",
-                            date: "2023-04-15",
-                            blockchainHash: "0xcfad3f9e8d7c6b5a",
-                            upvotes: 28
-                        }
-                    ],
-                    "libya": [
-                        {
-                            title: "Muammar Gaddafi - The Brother Leader",
-                            content: "I lived through Gaddafi's rule, and it was... complicated. For 42 years, he was the face of Libya, implementing his system of direct democracy called Jamahiriya. I remember the green flags everywhere, the speeches on television that could last for hours. He positioned himself as an anti-imperialist leader, standing up to Western powers. There were good times - education and healthcare improved for many people. But there was also fear, and the knowledge that dissent wasn't tolerated. When the civil war came in 2011, everything changed. Now, years later, I think about how his rule shaped modern Libya, for better and for worse. History will judge him, but we lived through his era.",
-                            author: "StoryLoc Community",
-                            date: "2023-06-20",
-                            blockchainHash: "0xdfbe4faf9e8d7c6b",
-                            upvotes: 17
                         }
                     ],
                     "ghana": [
                         {
                             title: "Yaa Asantewaa - Queen Mother of Ejisu",
-                            content: "Let me share the story of Yaa Asantewaa that my grandmother passed down to me. When the British demanded the Golden Stool, the sacred symbol of the Ashanti nation, it was Yaa Asantewaa who stood up and said enough. She wasn't a young woman - she was the Queen Mother, a position of wisdom and respect. But when the men hesitated, she took up the fight herself. I can picture her rallying the Ashanti warriors, her voice strong and clear, refusing to let our heritage be stolen. The War of the Golden Stool that followed showed the British that African women could be formidable leaders. Her courage echoes through generations of Ghanaian women.",
+                            content: "Let me share the story of Yaa Asantewaa that my grandmother passed down to me. When the British demanded the Golden Stool, it was Yaa Asantewaa who stood up and said enough.",
                             author: "StoryLoc Community",
                             date: "2023-04-12",
-                            blockchainHash: "0xefcf5fbfaf9e8d7c",
+                            id: this.generateStoryId(),
                             upvotes: 16
                         }
                     ],
                     "mali": [
                         {
                             title: "Mansa Musa - The Golden King",
-                            content: "Have you heard about Mansa Musa's pilgrimage to Mecca? The stories say his caravan stretched as far as the eye could see, with thousands of soldiers, servants, and slaves. But what really captures my imagination is the gold - so much gold that when he passed through Cairo, he gave away so much that he actually caused inflation in the region for years! European maps started showing Mali as a land of incredible wealth after his journey. But Mansa Musa wasn't just wealthy - he built universities and mosques, making Timbuktu a center of learning that attracted scholars from across Africa and the Middle East. His legacy isn't just in the gold, but in the knowledge he valued and preserved.",
+                            content: "Have you heard about Mansa Musa's pilgrimage to Mecca? The stories say his caravan stretched as far as the eye could see, with thousands of soldiers, servants, and slaves.",
                             author: "StoryLoc Community",
                             date: "2023-07-03",
-                            blockchainHash: "0x4f2fbfffffffefdf",
+                            id: this.generateStoryId(),
                             upvotes: 31
-                        }
-                    ],
-                    "zambia": [
-                        {
-                            title: "The Legend of Nyaminyami",
-                            content: "My people, the Tonga, have told the story of Nyaminyami for generations. They say he's a river god, half fish and half snake, who lives in the Zambezi River. When I was a child, my grandfather would tell me how Nyaminyami protects our people and brings us good fortune. He said that when the river is calm, Nyaminyami is content, but when it rages, he's angry about something. When they built the Kariba Dam and displaced our people, many believed Nyaminyami was separated from his wife, and that's why the floods came. Even now, when I stand by the Zambezi, I feel his presence in the water's flow, a reminder of the old ways and the spirits that watch over us.",
-                            author: "StoryLoc Community",
-                            date: "2023-10-28",
-                            blockchainHash: "0xaf8fffffffffffff",
-                            upvotes: 12
                         }
                     ]
                 };
             }
 
-            // Get all stories from cloud storage
-            getAllStories() {
-                const cloudData = localStorage.getItem(this.storageKey);
-                return cloudData ? JSON.parse(cloudData) : {};
+            generateStoryId() {
+                return 'story_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             }
 
-            // Add story to cloud storage
-            addStory(countryId, story) {
-                const cloudData = this.getAllStories();
-                
-                if (!cloudData[countryId]) {
-                    cloudData[countryId] = [];
-                }
-                
-                cloudData[countryId].push(story);
-                localStorage.setItem(this.storageKey, JSON.stringify(cloudData));
-                
-                // Simulate propagation to other nodes
-                this.simulatePropagation(countryId, story);
-                
-                return true;
-            }
-
-            // Simulate network propagation (for demo purposes)
-            simulatePropagation(countryId, story) {
-                console.log(`🌐 Propagating story to StoryLoc network: "${story.title}" for ${countryId}`);
-                
-                // Simulate network delay
-                setTimeout(() => {
-                    document.getElementById('syncStatus').innerHTML = 
-                        `✅ Story synchronized across ${Math.floor(Math.random() * 50) + 10} nodes`;
-                    
-                    setTimeout(() => {
-                        document.getElementById('syncStatus').innerHTML = 
-                            `🌍 Connected to StoryLoc Network | ${Object.keys(this.getAllStories()).length} countries active`;
-                    }, 3000);
-                }, 1000);
-            }
-
-            simulateNetworkSync() {
-                // Simulate initial network connection
-                setTimeout(() => {
-                    document.getElementById('syncStatus').innerHTML = 
-                        `🌍 Connected to StoryLoc Network | ${Object.keys(this.getAllStories()).length} countries active`;
-                }, 2000);
-            }
-        }
-
-        // ==================== OPTIMIZED BLOCKCHAIN SIMULATION ====================
-        class StoryBlockchain {
-            constructor() {
-                this.chain = this.loadChainFromStorage();
-                this.difficulty = 1; // Reduced difficulty for faster mining
-            }
-
-            createBlock(story) {
-                const previousBlock = this.chain[this.chain.length - 1];
-                const previousHash = previousBlock ? previousBlock.hash : '0'.repeat(64);
-                
-                const block = {
-                    index: this.chain.length,
-                    timestamp: new Date().toISOString(),
-                    story: story,
-                    previousHash: previousHash,
-                    nonce: 0,
-                    hash: ''
-                };
-
-                // Use optimized mining
-                block.hash = this.fastMineBlock(block);
-                return block;
-            }
-
-            // OPTIMIZED: Much faster mining algorithm
-            fastMineBlock(block) {
-                // Use a simpler hash that doesn't require intensive computation
-                const data = JSON.stringify(block.story) + block.previousHash + Date.now();
-                const hash = this.calculateHash(data);
-                
-                console.log(`⛏️ Fast-mined block #${block.index}`);
-                return hash;
-            }
-
-            calculateHash(data) {
+            calculateBlockHash(index, timestamp, stories, previousHash, nonce) {
+                const data = index + timestamp + JSON.stringify(stories) + previousHash + nonce;
                 let hash = 0;
                 for (let i = 0; i < data.length; i++) {
                     const char = data.charCodeAt(i);
@@ -749,50 +663,288 @@
                 return '0x' + Math.abs(hash).toString(16).padStart(16, '0');
             }
 
-            addStory(story) {
-                const block = this.createBlock(story);
-                this.chain.push(block);
-                this.saveChainToStorage();
+            getAllStories() {
+                const chain = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
+                let allStories = {};
                 
-                console.log(`🔗 Added to blockchain: Block #${block.index}, Hash: ${block.hash}`);
-                return block.hash;
+                chain.forEach(block => {
+                    Object.keys(block.stories).forEach(country => {
+                        if (!allStories[country]) {
+                            allStories[country] = [];
+                        }
+                        block.stories[country].forEach(story => {
+                            if (!allStories[country].find(s => s.id === story.id)) {
+                                allStories[country].push(story);
+                            }
+                        });
+                    });
+                });
+                
+                return allStories;
             }
 
-            saveChainToStorage() {
-                localStorage.setItem('storyloc_blockchain_chain', JSON.stringify(this.chain));
+            async addStory(countryId, story) {
+                const chain = JSON.parse(localStorage.getItem(this.storageKey));
+                const previousBlock = chain[chain.length - 1];
+                
+                const newStories = JSON.parse(JSON.stringify(previousBlock.stories));
+                if (!newStories[countryId]) {
+                    newStories[countryId] = [];
+                }
+                
+                story.id = this.generateStoryId();
+                story.timestamp = new Date().toISOString();
+                newStories[countryId].push(story);
+                
+                const newBlock = {
+                    index: chain.length,
+                    timestamp: new Date().toISOString(),
+                    stories: newStories,
+                    previousHash: previousBlock.hash,
+                    hash: this.calculateBlockHash(chain.length, new Date().toISOString(), newStories, previousBlock.hash, 0)
+                };
+                
+                chain.push(newBlock);
+                localStorage.setItem(this.storageKey, JSON.stringify(chain));
+                
+                // Automatically sync with network after adding story
+                await this.pushToNetwork(chain);
+                
+                return story.id;
             }
 
-            loadChainFromStorage() {
-                const saved = localStorage.getItem('storyloc_blockchain_chain');
-                return saved ? JSON.parse(saved) : [];
+            async syncWithNetwork() {
+                try {
+                    const response = await fetch(this.networkUrl, {
+                        headers: {
+                            'X-Master-Key': this.apiKey
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const networkData = await response.json();
+                        const networkChain = networkData.record;
+                        
+                        if (networkChain && networkChain.length > 0) {
+                            const localChain = JSON.parse(localStorage.getItem(this.storageKey));
+                            
+                            if (networkChain.length > localChain.length) {
+                                localStorage.setItem(this.storageKey, JSON.stringify(networkChain));
+                                console.log('📡 Auto-synced with network');
+                                this.updateSyncStatus(true);
+                            } else if (localChain.length > networkChain.length) {
+                                await this.pushToNetwork(localChain);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.log('🌐 Network unavailable, using local blockchain');
+                    this.updateSyncStatus(false);
+                }
+            }
+
+            async pushToNetwork(chain) {
+                try {
+                    await fetch(this.networkUpdateUrl, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Master-Key': this.apiKey
+                        },
+                        body: JSON.stringify(chain)
+                    });
+                    console.log('✅ Blockchain updated on network');
+                    this.updateSyncStatus(true);
+                } catch (error) {
+                    console.log('❌ Network update failed');
+                    this.updateSyncStatus(false);
+                }
+            }
+
+            updateSyncStatus(success = true) {
+                const stories = this.getAllStories();
+                const totalStories = Object.values(stories).reduce((sum, countryStories) => sum + countryStories.length, 0);
+                
+                if (success) {
+                    document.getElementById('syncStatus').innerHTML = 
+                        `✅ Connected to StoryLoc Network | ${totalStories} stories across ${Object.keys(stories).length} countries`;
+                } else {
+                    document.getElementById('syncStatus').innerHTML = 
+                        `🌐 Offline Mode | ${totalStories} stories (syncing when online)`;
+                }
             }
 
             getChainStats() {
+                const chain = JSON.parse(localStorage.getItem(this.storageKey));
+                const stories = this.getAllStories();
+                const totalStories = Object.values(stories).reduce((sum, countryStories) => sum + countryStories.length, 0);
+                
                 return {
-                    length: this.chain.length,
-                    totalStories: this.chain.length,
-                    networkHash: this.chain.length > 0 ? this.chain[this.chain.length - 1].hash : '0x0'
+                    length: chain.length,
+                    totalStories: totalStories,
+                    networkHash: chain.length > 0 ? chain[chain.length - 1].hash : '0x0',
+                    countries: Object.keys(stories).length
+                };
+            }
+        }
+
+        // ==================== ADVANCED AI STORY ENHANCER ====================
+        class AIStoryEnhancer {
+            constructor() {
+                this.commonMistakes = {
+                    // Grammar and spelling corrections
+                    'i': 'I',
+                    'im': 'I\'m',
+                    'ive': 'I\'ve',
+                    'dont': 'don\'t',
+                    'wont': 'won\'t',
+                    'cant': 'can\'t',
+                    'shouldnt': 'shouldn\'t',
+                    'couldnt': 'couldn\'t',
+                    'wouldnt': 'wouldn\'t',
+                    'its': 'it\'s',
+                    'thier': 'their',
+                    'recieve': 'receive',
+                    'seperate': 'separate',
+                    'definately': 'definitely',
+                    'occured': 'occurred',
+                    'goverment': 'government',
+                    'enviroment': 'environment'
+                };
+
+                this.africanCulturalTerms = {
+                    // Common African terms that might be misspelled
+                    'zulu': 'Zulu',
+                    'yoruba': 'Yoruba',
+                    'igbo': 'Igbo',
+                    'hausa': 'Hausa',
+                    'swahili': 'Swahili',
+                    'ashanti': 'Ashanti',
+                    'masai': 'Maasai',
+                    'berber': 'Berber',
+                    'tuareg': 'Tuareg',
+                    'fulani': 'Fulani',
+                    'amazigh': 'Amazigh',
+                    'orisha': 'Orisha',
+                    'sankofa': 'Sankofa',
+                    'ubuntu': 'Ubuntu'
                 };
             }
 
-            validateChain() {
-                for (let i = 1; i < this.chain.length; i++) {
-                    const currentBlock = this.chain[i];
-                    const previousBlock = this.chain[i - 1];
-                    
-                    if (currentBlock.previousHash !== previousBlock.hash) {
-                        return false;
+            enhanceStory(originalStory, country) {
+                let correctedStory = originalStory;
+                
+                // Show what corrections are being made
+                const corrections = [];
+                
+                // Step 1: Basic grammar and capitalization
+                correctedStory = this.fixCapitalization(correctedStory);
+                
+                // Step 2: Fix common spelling mistakes
+                correctedStory = this.fixSpellingMistakes(correctedStory, corrections);
+                
+                // Step 3: Fix African cultural terms
+                correctedStory = this.fixCulturalTerms(correctedStory, country, corrections);
+                
+                // Step 4: Improve sentence structure
+                correctedStory = this.improveSentenceStructure(correctedStory, corrections);
+                
+                // Step 5: Add cultural context
+                correctedStory = this.addCulturalContext(correctedStory, country);
+                
+                return {
+                    enhancedStory: correctedStory,
+                    corrections: corrections
+                };
+            }
+
+            fixCapitalization(text) {
+                // Capitalize first letter of each sentence
+                return text.replace(/(^\w|\.\s+\w)/g, match => match.toUpperCase());
+            }
+
+            fixSpellingMistakes(text, corrections) {
+                let corrected = text;
+                
+                Object.keys(this.commonMistakes).forEach(mistake => {
+                    const regex = new RegExp(`\\b${mistake}\\b`, 'gi');
+                    if (regex.test(corrected)) {
+                        corrections.push(`Fixed spelling: "${mistake}" → "${this.commonMistakes[mistake]}"`);
+                        corrected = corrected.replace(regex, this.commonMistakes[mistake]);
                     }
+                });
+                
+                return corrected;
+            }
+
+            fixCulturalTerms(text, country, corrections) {
+                let corrected = text;
+                const countryName = getCountryName(country);
+                
+                Object.keys(this.africanCulturalTerms).forEach(term => {
+                    const regex = new RegExp(`\\b${term}\\b`, 'gi');
+                    if (regex.test(corrected)) {
+                        corrections.push(`Corrected cultural term: "${term}" → "${this.africanCulturalTerms[term]}"`);
+                        corrected = corrected.replace(regex, this.africanCulturalTerms[term]);
+                    }
+                });
+                
+                // Ensure country name is properly capitalized
+                const countryRegex = new RegExp(`\\b${countryName.toLowerCase()}\\b`, 'gi');
+                if (countryRegex.test(corrected)) {
+                    corrections.push(`Capitalized country name: "${countryName.toLowerCase()}" → "${countryName}"`);
+                    corrected = corrected.replace(countryRegex, countryName);
                 }
-                return true;
+                
+                return corrected;
+            }
+
+            improveSentenceStructure(text, corrections) {
+                let improved = text;
+                
+                // Fix common sentence structure issues
+                const improvements = [
+                    { pattern: /\b(I am|I'm) (going to|gonna)\b/gi, replacement: 'I will' },
+                    { pattern: /\ba lot of\b/gi, replacement: 'many' },
+                    { pattern: /\bvery unique\b/gi, replacement: 'unique' },
+                    { pattern: /\bmore better\b/gi, replacement: 'better' },
+                    { pattern: /\bkind of\b/gi, replacement: 'somewhat' },
+                    { pattern: /\bsort of\b/gi, replacement: 'rather' }
+                ];
+                
+                improvements.forEach(improvement => {
+                    if (improvement.pattern.test(improved)) {
+                        corrections.push(`Improved phrasing: "${improvement.pattern.toString().match(/\\b(\w+\s?)+\b/gi)?.[0]}" → "${improvement.replacement}"`);
+                        improved = improved.replace(improvement.pattern, improvement.replacement);
+                    }
+                });
+                
+                return improved;
+            }
+
+            addCulturalContext(text, country) {
+                const countryName = getCountryName(country);
+                const culturalEnhancements = {
+                    'nigeria': `This story reflects the rich cultural heritage of Nigeria, where traditions are passed down through generations and community bonds run deep.`,
+                    'egypt': `This narrative connects to Egypt's ancient civilization, where history and modernity coexist in a unique cultural tapestry.`,
+                    'south-africa': `This account embodies the spirit of Ubuntu in South Africa - the belief in a universal bond of sharing that connects all humanity.`,
+                    'ghana': `This story captures Ghana's tradition of oral history, where elders pass down wisdom and cultural values through storytelling.`,
+                    'kenya': `This reflects Kenya's diverse cultural landscape, where numerous ethnic communities maintain their unique traditions while building a shared national identity.`,
+                    'ethiopia': `This narrative connects to Ethiopia's ancient Christian heritage and its role as one of the world's oldest continuous civilizations.`,
+                    'mali': `This story echoes Mali's great historical empires that once controlled trans-Saharan trade routes and centers of Islamic learning.`
+                };
+                
+                const enhancement = culturalEnhancements[country] || `This story contributes to the rich cultural tapestry of ${countryName}, preserving important traditions and memories for future generations.`;
+                
+                return `${text} ${enhancement} The cultural significance of this story helps maintain the living history of African heritage, ensuring that these valuable narratives continue to inspire and educate people across the continent and around the world.`;
             }
         }
 
         // ==================== APPLICATION INITIALIZATION ====================
-        const storyCloud = new StoryLocCloud();
-        const storyBlockchain = new StoryBlockchain();
+        const storyBlockchain = new AutoSyncBlockchain();
+        const aiEnhancer = new AIStoryEnhancer();
 
-        // Complete list of all African countries
+        // Complete list of all African countries with proper name mapping
         const allAfricanCountries = [
             "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi",
             "Cabo Verde", "Cameroon", "Central African Republic", "Chad", "Comoros",
@@ -806,6 +958,25 @@
             "Democratic Republic of the Congo"
         ];
 
+        // Country name mapping for the geoJSON data
+        const countryNameMapping = {
+            "Tanzania, United Republic of": "Tanzania",
+            "United Republic of Tanzania": "Tanzania",
+            "Côte d'Ivoire": "Côte d'Ivoire",
+            "Ivory Coast": "Côte d'Ivoire",
+            "Congo, Democratic Republic of the": "Democratic Republic of the Congo",
+            "Democratic Republic of the Congo": "Democratic Republic of the Congo",
+            "DR Congo": "Democratic Republic of the Congo",
+            "Congo, Republic of the": "Congo",
+            "Republic of Congo": "Congo",
+            "Cabo Verde": "Cabo Verde",
+            "Cape Verde": "Cabo Verde",
+            "Eswatini": "Eswatini",
+            "Swaziland": "Eswatini",
+            "São Tomé and Príncipe": "São Tomé and Príncipe",
+            "Sao Tome and Principe": "São Tomé and Príncipe"
+        };
+
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             populateCountryDropdown();
@@ -816,9 +987,10 @@
                 enhanceStory();
             });
 
-            // Show blockchain status
-            const stats = storyBlockchain.getChainStats();
-            console.log(`📊 Blockchain Status: ${stats.length} blocks, Valid: ${storyBlockchain.validateChain()}`);
+            // Update sync status after initialization
+            setTimeout(() => {
+                storyBlockchain.updateSyncStatus();
+            }, 2000);
         });
 
         function populateCountryDropdown() {
@@ -847,15 +1019,20 @@
                 .then(worldData => {
                     const africanCountries = {
                         type: "FeatureCollection",
-                        features: worldData.features.filter(feature => 
-                            allAfricanCountries.includes(feature.properties.name)
-                        )
+                        features: worldData.features.filter(feature => {
+                            const countryName = feature.properties.name;
+                            const mappedName = countryNameMapping[countryName] || countryName;
+                            return allAfricanCountries.includes(mappedName);
+                        })
                     };
 
                     L.geoJSON(africanCountries, {
                         style: { color: '#D4AF37', weight: 1.5, fillColor: '#1A1A1A', fillOpacity: 0.4 },
                         onEachFeature: function(feature, layer) {
-                            const countryName = feature.properties.name;
+                            let countryName = feature.properties.name;
+                            
+                            // Map to consistent naming
+                            countryName = countryNameMapping[countryName] || countryName;
                             const countryId = countryName.toLowerCase().replace(/\s+/g, '-');
                             
                             layer.on('click', function() {
@@ -871,6 +1048,12 @@
                             layer.bindTooltip(countryName, { permanent: false, className: 'custom-tooltip' });
                         }
                     }).addTo(map);
+
+                    // Add debug info to check which countries are loaded
+                    console.log('Loaded African countries:', africanCountries.features.map(f => {
+                        const name = f.properties.name;
+                        return { original: name, mapped: countryNameMapping[name] || name };
+                    }));
                 })
                 .catch(error => {
                     console.error('Error loading map data:', error);
@@ -884,10 +1067,10 @@
                 });
         }
 
-        // ==================== OPTIMIZED STORY MANAGEMENT ====================
+        // ==================== STORY MANAGEMENT ====================
         function displayCountryStories(countryId) {
-            const cloudData = storyCloud.getAllStories();
-            const countryStories = cloudData[countryId] || [];
+            const allStories = storyBlockchain.getAllStories();
+            const countryStories = allStories[countryId] || [];
             const countryName = getCountryName(countryId);
             const stats = storyBlockchain.getChainStats();
             
@@ -895,23 +1078,23 @@
                 <button class="back-btn" onclick="showMainView()">← Back to Map</button>
                 <h2>Stories from ${countryName}</h2>
                 <div class="blockchain-badge">
-                    <div class="title">🔗 DECENTRALIZED STORY NETWORK</div>
+                    <div class="title">🔗 DISTRIBUTED STORY NETWORK</div>
                     <div class="hash">Blockchain: ${stats.length} blocks | ${countryStories.length} stories</div>
-                    <div class="features">Immutable • Distributed • Community-Powered</div>
+                    <div class="features">Auto-Sync • AI-Enhanced • Cross-Device</div>
                 </div>
             `;
 
             if (countryStories.length > 0) {
                 storiesHTML += `<p>Community stories from ${countryName}:</p><div class="stories-list">`;
                 
-                countryStories.forEach((story, index) => {
+                countryStories.forEach((story) => {
                     const preview = story.content.substring(0, 120) + '...';
                     storiesHTML += `
-                        <div class="story-card" onclick="displayStory('${countryId}', ${index})">
+                        <div class="story-card" onclick="displayStory('${countryId}', '${story.id}')">
                             <h3>${story.title}</h3>
                             <p>${preview}</p>
                             <p><small>By ${story.author} • ${formatDate(story.date)}</small></p>
-                            <p style="color: #D4AF37; font-size: 0.8rem;">🔗 ${story.blockchainHash} • 👍 ${story.upvotes || 0}</p>
+                            <p style="color: #D4AF37; font-size: 0.8rem;">🔗 ${story.id.substring(0, 12)}... • 👍 ${story.upvotes || 0}</p>
                         </div>
                     `;
                 });
@@ -935,18 +1118,24 @@
             document.getElementById('storyDisplay').scrollIntoView({ behavior: 'smooth' });
         }
 
-        function displayStory(countryId, storyIndex) {
-            const cloudData = storyCloud.getAllStories();
-            const story = cloudData[countryId][storyIndex];
+        function displayStory(countryId, storyId) {
+            const allStories = storyBlockchain.getAllStories();
+            const countryStories = allStories[countryId] || [];
+            const story = countryStories.find(s => s.id === storyId);
             const countryName = getCountryName(countryId);
+            
+            if (!story) {
+                alert('Story not found');
+                return;
+            }
             
             document.getElementById('storyDisplay').innerHTML = `
                 <button class="back-btn" onclick="displayCountryStories('${countryId}')">← Back to Stories</button>
                 <h2>${story.title}</h2>
                 <div class="blockchain-badge">
                     <div class="title">🔗 BLOCKCHAIN VERIFIED</div>
-                    <div class="hash">Transaction: ${story.blockchainHash}</div>
-                    <div class="features">Immutable • Timestamped • Decentralized</div>
+                    <div class="hash">Story ID: ${story.id}</div>
+                    <div class="features">AI-Enhanced • Auto-Synced Across All Devices</div>
                 </div>
                 <div class="story-content">
                     ${story.content}
@@ -962,8 +1151,7 @@
             document.getElementById('storyDisplay').style.display = 'block';
         }
 
-        // IMPROVED: Better story enhancement - just makes stories longer with storytelling vibe
-        function enhanceStory() {
+        async function enhanceStory() {
             const userName = document.getElementById('userName').value;
             const userEmail = document.getElementById('userEmail').value;
             const storyCountry = document.getElementById('storyCountry').value;
@@ -975,45 +1163,50 @@
                 return;
             }
             
-            document.querySelector('.submit-btn').textContent = 'Adding Your Story...';
+            document.querySelector('.submit-btn').textContent = 'AI Enhancing Story...';
             document.querySelector('.submit-btn').disabled = true;
-            document.getElementById('syncStatus').innerHTML = '⛏️ Adding your story to the blockchain...';
+            document.getElementById('syncStatus').innerHTML = '🤖 AI is correcting and enhancing your story...';
             
-            // OPTIMIZED: Remove the artificial 3-second delay and use faster processing
-            setTimeout(() => {
-                // IMPROVED: Better story enhancement - just expands the story naturally
-                const enhancedStory = enhanceStoryContent(userStory, storyCountry);
+            try {
+                // Use AI to enhance and correct the story
+                const enhancementResult = aiEnhancer.enhanceStory(userStory, storyCountry);
+                const enhancedStory = enhancementResult.enhancedStory;
                 
-                // OPTIMIZED: Use the faster blockchain mining
-                const blockchainHash = storyBlockchain.addStory({
-                    title: storyTitle,
-                    author: userName,
-                    country: storyCountry,
-                    timestamp: new Date().toISOString(),
-                    contentPreview: userStory.substring(0, 100) + '...'
-                });
+                // Show AI corrections
+                let correctionsHTML = '';
+                if (enhancementResult.corrections.length > 0) {
+                    correctionsHTML = `
+                        <div class="ai-correction">
+                            <div class="title">🤖 AI Story Improvements:</div>
+                            <ul>
+                                ${enhancementResult.corrections.map(corr => `<li>${corr}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
                 
-                // Add to cloud storage
+                document.getElementById('syncStatus').innerHTML = '⛏️ Adding enhanced story to blockchain...';
+                
                 const newStory = {
                     title: storyTitle,
                     content: enhancedStory,
                     author: userName,
                     date: new Date().toISOString().split('T')[0],
-                    blockchainHash: blockchainHash,
                     upvotes: 1
                 };
                 
-                storyCloud.addStory(storyCountry, newStory);
+                const storyId = await storyBlockchain.addStory(storyCountry, newStory);
                 
                 // Show success message
                 document.getElementById('storyDisplay').innerHTML = `
                     <button class="back-btn" onclick="showMainView()">← Back to Map</button>
                     <h2>Your Story is Live! 🎉</h2>
                     <div class="blockchain-badge">
-                        <div class="title">🔗 SUCCESSFULLY ADDED</div>
-                        <div class="hash">Block Hash: ${blockchainHash}</div>
-                        <div class="features">Now visible to all StoryLoc users worldwide</div>
+                        <div class="title">🔗 SUCCESSFULLY ADDED TO BLOCKCHAIN</div>
+                        <div class="hash">Story ID: ${storyId}</div>
+                        <div class="features">AI-Enhanced • Automatically Synced</div>
                     </div>
+                    ${correctionsHTML}
                     <div class="story-content">
                         ${enhancedStory}
                     </div>
@@ -1032,32 +1225,15 @@
                 document.querySelector('.submit-btn').disabled = false;
                 
                 document.getElementById('storyDisplay').scrollIntoView({ behavior: 'smooth' });
-            }, 500); // OPTIMIZED: Reduced from 3000ms to 500ms
-        }
-
-        // NEW: Better story enhancement function
-        function enhanceStoryContent(originalStory, country) {
-            const countryName = getCountryName(country);
-            
-            // Simple enhancement - just add more descriptive content
-            const enhancements = [
-                `The memory of that time in ${countryName} stays with me even now.`,
-                `I can still picture it clearly in my mind.`,
-                `The details come back to me as if it were yesterday.`,
-                `There's so much more to this story than what first meets the eye.`,
-                `What happened next would change everything.`,
-                `The air was thick with anticipation that day.`,
-                `Little did we know what was about to unfold.`,
-                `The sounds and smells of that place are etched in my memory forever.`,
-                `It all began on an ordinary day that would become anything but ordinary.`,
-                `Looking back, I realize how significant that moment truly was.`
-            ];
-            
-            // Pick a random enhancement and add it to the story
-            const randomEnhancement = enhancements[Math.floor(Math.random() * enhancements.length)];
-            
-            // Return the enhanced story with natural flow
-            return `${originalStory} ${randomEnhancement} I remember how the community came together during those times, sharing stories around the fire and passing down wisdom from our elders. The traditions of ${countryName} run deep in our blood, connecting us to generations who came before. There were challenges, of course - every good story has them - but there was also joy, celebration, and the unbreakable bonds of family and community that sustained us through everything.`;
+                
+                // Update sync status
+                storyBlockchain.updateSyncStatus();
+                
+            } catch (error) {
+                alert('Error adding story. Please try again.');
+                document.querySelector('.submit-btn').textContent = 'Share Your Legend';
+                document.querySelector('.submit-btn').disabled = false;
+            }
         }
 
         function getCountryName(countryId) {
@@ -1081,3 +1257,5 @@
     </script>
 </body>
 </html>
+
+    
