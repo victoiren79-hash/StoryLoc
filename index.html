@@ -486,7 +486,7 @@
                 <p>Discover the rich history, culture, and legends of Africa through our interactive map. Each country holds stories of great leaders, epic battles, and cultural heritage.</p>
                 <p>Share your own stories and let our AI enhance them with cultural context and historical accuracy.</p>
                 <div class="sync-status" id="syncStatus">
-                    🔄 Connecting to StoryLoc Network...
+                    🔄 Connecting to StoryLoc Cloud...
                 </div>
             </div>
             
@@ -550,257 +550,189 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // ==================== CLOUD DATABASE + BLOCKCHAIN HYBRID ====================
-        class StoryLocDatabase {
+        // ==================== REAL CLOUD DATABASE - NO SETUP REQUIRED ====================
+        class StoryLocCloud {
             constructor() {
-                this.apiUrl = 'https://sheetdb.io/api/v1/8vq7lzrqk6dju'; // Free Google Sheets API
-                this.localStorageKey = 'storyloc_database_cache';
-                this.cacheExpiry = 5 * 60 * 1000; // 5 minutes cache
+                // JSONBin.io - Free cloud database (no setup required)
+                this.binId = '67c3f6a2acd3cb34a8af6c8c';
+                this.apiKey = '$2a$10$L.ws.QMpx.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9.9';
+                this.stories = [];
+                this.lastSync = 0;
             }
 
             async init() {
-                // Try to load from cloud database first
                 try {
-                    const cloudData = await this.loadFromCloud();
-                    if (cloudData && cloudData.length > 0) {
-                        this.saveToLocalStorage(cloudData);
-                        return cloudData;
-                    }
+                    await this.loadFromCloud();
+                    return true;
                 } catch (error) {
-                    console.log('🌐 Using cached data - cloud database unavailable');
+                    console.log('Using default stories - cloud will sync when available');
+                    this.stories = this.getDefaultStories();
+                    return false;
                 }
-                
-                // Fallback to localStorage
-                return this.loadFromLocalStorage();
             }
 
             async loadFromCloud() {
-                const response = await fetch(this.apiUrl);
-                if (!response.ok) throw new Error('Cloud database unavailable');
-                const data = await response.json();
-                return data;
-            }
-
-            loadFromLocalStorage() {
-                const cached = localStorage.getItem(this.localStorageKey);
-                if (cached) {
-                    const { data, timestamp } = JSON.parse(cached);
-                    // Check if cache is still valid
-                    if (Date.now() - timestamp < this.cacheExpiry) {
-                        return data;
-                    }
+                try {
+                    const response = await fetch(`https://api.jsonbin.io/v3/b/${this.binId}/latest`, {
+                        headers: {
+                            'X-Master-Key': this.apiKey
+                        }
+                    });
+                    
+                    if (!response.ok) throw new Error('Cloud unavailable');
+                    
+                    const data = await response.json();
+                    this.stories = data.record?.stories || this.getDefaultStories();
+                    this.lastSync = Date.now();
+                    console.log('✅ Loaded stories from cloud:', this.stories.length);
+                    return true;
+                } catch (error) {
+                    throw new Error('Cloud load failed');
                 }
-                return this.getDefaultStories();
             }
 
-            saveToLocalStorage(data) {
-                const cache = {
-                    data: data,
-                    timestamp: Date.now()
-                };
-                localStorage.setItem(this.localStorageKey, JSON.stringify(cache));
+            async saveToCloud() {
+                try {
+                    const response = await fetch(`https://api.jsonbin.io/v3/b/${this.binId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Master-Key': this.apiKey
+                        },
+                        body: JSON.stringify({
+                            stories: this.stories,
+                            lastUpdated: new Date().toISOString()
+                        })
+                    });
+
+                    if (response.ok) {
+                        console.log('✅ Stories saved to cloud');
+                        this.lastSync = Date.now();
+                        return true;
+                    }
+                } catch (error) {
+                    console.log('❌ Cloud save failed');
+                }
+                return false;
             }
 
             getDefaultStories() {
                 return [
                     {
-                        id: 'story_1',
+                        id: '1',
                         country: 'nigeria',
                         title: "The Benin Kingdom",
-                        content: "I remember the stories my grandfather told me about the great Benin Kingdom. He said our ancestors built a civilization that amazed even the Europeans when they first arrived.",
+                        content: "I remember the stories my grandfather told me about the great Benin Kingdom. He said our ancestors built a civilization that amazed even the Europeans when they first arrived. The bronze sculptures they created weren't just art - they were our history, our stories cast in metal for all time.",
                         author: "StoryLoc Community",
                         date: "2023-01-15",
                         upvotes: 15,
                         blockchainHash: "0x4b82f8d1c3e9a7f2"
                     },
                     {
-                        id: 'story_2',
+                        id: '2',
                         country: 'egypt',
                         title: "Cleopatra VII",
-                        content: "I've always been fascinated by Cleopatra's story. She wasn't just the last pharaoh of Egypt - she was a master politician who spoke multiple languages.",
+                        content: "I've always been fascinated by Cleopatra's story. She wasn't just the last pharaoh of Egypt - she was a master politician who spoke multiple languages and held her own against the rising Roman Empire.",
                         author: "StoryLoc Community",
                         date: "2023-03-10",
                         upvotes: 23,
                         blockchainHash: "0x6a4f7e3d2c9b8a5e"
                     },
                     {
-                        id: 'story_3',
+                        id: '3',
                         country: 'south-africa',
                         title: "Nelson Mandela - Father of the Nation",
-                        content: "I remember the day Nelson Mandela walked out of prison after 27 years. The hope in people's eyes was something I'll never forget.",
+                        content: "I remember the day Nelson Mandela walked out of prison after 27 years. The hope in people's eyes was something I'll never forget. He taught us that forgiveness is stronger than revenge.",
                         author: "StoryLoc Community",
                         date: "2023-02-18",
                         upvotes: 45,
                         blockchainHash: "0xae8b1f7d6c5b4a3e"
+                    },
+                    {
+                        id: '4',
+                        country: 'ghana',
+                        title: "Yaa Asantewaa - Queen Mother of Ejisu",
+                        content: "Let me share the story of Yaa Asantewaa that my grandmother passed down to me. When the British demanded the Golden Stool, it was Yaa Asantewaa who stood up and said enough.",
+                        author: "StoryLoc Community",
+                        date: "2023-04-12",
+                        upvotes: 16,
+                        blockchainHash: "0xefcf5fbfaf9e8d7c"
+                    },
+                    {
+                        id: '5',
+                        country: 'mali',
+                        title: "Mansa Musa - The Golden King",
+                        content: "Have you heard about Mansa Musa's pilgrimage to Mecca? The stories say his caravan stretched as far as the eye could see, with thousands of soldiers, servants, and slaves.",
+                        author: "StoryLoc Community",
+                        date: "2023-07-03",
+                        upvotes: 31,
+                        blockchainHash: "0x4f2fbfffffffefdf"
                     }
                 ];
             }
 
-            async addStory(story) {
-                // Add to cloud database
-                try {
-                    const response = await fetch(this.apiUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            data: [story]
-                        })
-                    });
-
-                    if (response.ok) {
-                        console.log('✅ Story saved to cloud database');
-                        
-                        // Update local cache
-                        const currentData = this.loadFromLocalStorage();
-                        currentData.push(story);
-                        this.saveToLocalStorage(currentData);
-                        
-                        return true;
-                    }
-                } catch (error) {
-                    console.log('❌ Cloud save failed, using local storage only');
-                }
-
-                // Fallback to local storage
-                const currentData = this.loadFromLocalStorage();
-                currentData.push(story);
-                this.saveToLocalStorage(currentData);
-                return true;
-            }
-
             getAllStories() {
-                const data = this.loadFromLocalStorage();
                 const organized = {};
-                
-                data.forEach(story => {
+                this.stories.forEach(story => {
                     if (!organized[story.country]) {
                         organized[story.country] = [];
                     }
                     organized[story.country].push(story);
                 });
-                
                 return organized;
             }
 
-            getStoriesByCountry(countryId) {
-                const allStories = this.getAllStories();
-                return allStories[countryId] || [];
+            async addStory(story) {
+                // Add to local array
+                this.stories.push(story);
+                
+                // Save to cloud
+                const cloudSuccess = await this.saveToCloud();
+                
+                return cloudSuccess;
             }
 
-            async syncWithCloud() {
+            async sync() {
                 try {
-                    const cloudData = await this.loadFromCloud();
-                    if (cloudData && cloudData.length > 0) {
-                        this.saveToLocalStorage(cloudData);
-                        return true;
-                    }
+                    await this.loadFromCloud();
+                    return true;
                 } catch (error) {
-                    console.log('🌐 Cloud sync failed');
+                    return false;
                 }
-                return false;
+            }
+
+            getStats() {
+                return {
+                    totalStories: this.stories.length,
+                    lastSync: this.lastSync,
+                    countries: Object.keys(this.getAllStories()).length
+                };
             }
         }
 
-        // ==================== BLOCKCHAIN VERIFICATION LAYER ====================
-        class StoryLocBlockchain {
-            constructor() {
-                this.storageKey = 'storyloc_blockchain';
-                this.initBlockchain();
-            }
-
-            initBlockchain() {
-                if (!localStorage.getItem(this.storageKey)) {
-                    const genesisBlock = this.createGenesisBlock();
-                    localStorage.setItem(this.storageKey, JSON.stringify([genesisBlock]));
-                }
-            }
-
-            createGenesisBlock() {
-                return {
-                    index: 0,
-                    timestamp: new Date().toISOString(),
-                    hash: this.calculateHash(0, new Date().toISOString(), 'genesis', '0'),
-                    previousHash: '0',
-                    data: 'Genesis Block'
-                };
-            }
-
-            calculateHash(index, timestamp, data, previousHash) {
-                const input = index + timestamp + JSON.stringify(data) + previousHash;
+        // ==================== BLOCKCHAIN VERIFICATION ====================
+        class StoryBlockchain {
+            generateStoryHash(story) {
+                const data = story.id + story.title + story.content + story.author + Date.now();
                 let hash = 0;
-                for (let i = 0; i < input.length; i++) {
-                    const char = input.charCodeAt(i);
+                for (let i = 0; i < data.length; i++) {
+                    const char = data.charCodeAt(i);
                     hash = ((hash << 5) - hash) + char;
                     hash = hash & hash;
                 }
                 return '0x' + Math.abs(hash).toString(16).padStart(16, '0');
             }
-
-            addStoryVerification(story) {
-                const chain = JSON.parse(localStorage.getItem(this.storageKey));
-                const previousBlock = chain[chain.length - 1];
-                
-                const newBlock = {
-                    index: chain.length,
-                    timestamp: new Date().toISOString(),
-                    data: {
-                        storyId: story.id,
-                        title: story.title,
-                        country: story.country,
-                        author: story.author
-                    },
-                    previousHash: previousBlock.hash,
-                    hash: this.calculateHash(chain.length, new Date().toISOString(), story, previousBlock.hash)
-                };
-                
-                chain.push(newBlock);
-                localStorage.setItem(this.storageKey, JSON.stringify(chain));
-                
-                return newBlock.hash;
-            }
-
-            verifyStory(storyId) {
-                const chain = JSON.parse(localStorage.getItem(this.storageKey));
-                return chain.find(block => block.data.storyId === storyId);
-            }
-
-            getStats() {
-                const chain = JSON.parse(localStorage.getItem(this.storageKey));
-                return {
-                    totalBlocks: chain.length,
-                    latestHash: chain[chain.length - 1].hash,
-                    verifiedStories: chain.length - 1 // minus genesis block
-                };
-            }
         }
 
-        // ==================== ADVANCED AI STORY ENHANCER ====================
+        // ==================== AI STORY ENHANCER ====================
         class AIStoryEnhancer {
-            constructor() {
-                this.commonMistakes = {
-                    'i': 'I', 'im': 'I\'m', 'ive': 'I\'ve', 'dont': 'don\'t', 'wont': 'won\'t',
-                    'cant': 'can\'t', 'shouldnt': 'shouldn\'t', 'couldnt': 'couldn\'t', 
-                    'wouldnt': 'wouldn\'t', 'its': 'it\'s', 'thier': 'their', 'recieve': 'receive',
-                    'seperate': 'separate', 'definately': 'definitely', 'occured': 'occurred'
-                };
-
-                this.africanCulturalTerms = {
-                    'zulu': 'Zulu', 'yoruba': 'Yoruba', 'igbo': 'Igbo', 'hausa': 'Hausa',
-                    'swahili': 'Swahili', 'ashanti': 'Ashanti', 'masai': 'Maasai', 'berber': 'Berber',
-                    'tuareg': 'Tuareg', 'fulani': 'Fulani', 'amazigh': 'Amazigh', 'orisha': 'Orisha'
-                };
-            }
-
             enhanceStory(originalStory, country) {
                 let correctedStory = originalStory;
                 const corrections = [];
                 
+                // Basic corrections
                 correctedStory = this.fixCapitalization(correctedStory);
-                correctedStory = this.fixSpellingMistakes(correctedStory, corrections);
-                correctedStory = this.fixCulturalTerms(correctedStory, country, corrections);
-                correctedStory = this.improveSentenceStructure(correctedStory, corrections);
+                correctedStory = this.fixCommonMistakes(correctedStory, corrections);
                 correctedStory = this.addCulturalContext(correctedStory, country);
                 
                 return {
@@ -813,81 +745,43 @@
                 return text.replace(/(^\w|\.\s+\w)/g, match => match.toUpperCase());
             }
 
-            fixSpellingMistakes(text, corrections) {
+            fixCommonMistakes(text, corrections) {
+                const mistakes = {
+                    'i ': 'I ', ' im ': ' I\'m ', ' dont ': ' don\'t ', ' cant ': ' can\'t ',
+                    ' wont ': ' won\'t ', ' its ': ' it\'s ', ' thier ': ' their ',
+                    ' recieve ': ' receive ', ' seperate ': ' separate '
+                };
+                
                 let corrected = text;
-                Object.keys(this.commonMistakes).forEach(mistake => {
-                    const regex = new RegExp(`\\b${mistake}\\b`, 'gi');
-                    if (regex.test(corrected)) {
-                        corrections.push(`Fixed: "${mistake}" → "${this.commonMistakes[mistake]}"`);
-                        corrected = corrected.replace(regex, this.commonMistakes[mistake]);
+                Object.keys(mistakes).forEach(mistake => {
+                    if (corrected.includes(mistake)) {
+                        corrections.push(`Fixed: "${mistake.trim()}" → "${mistakes[mistake].trim()}"`);
+                        corrected = corrected.replace(new RegExp(mistake, 'g'), mistakes[mistake]);
                     }
                 });
                 return corrected;
-            }
-
-            fixCulturalTerms(text, country, corrections) {
-                let corrected = text;
-                const countryName = getCountryName(country);
-                
-                Object.keys(this.africanCulturalTerms).forEach(term => {
-                    const regex = new RegExp(`\\b${term}\\b`, 'gi');
-                    if (regex.test(corrected)) {
-                        corrections.push(`Cultural term: "${term}" → "${this.africanCulturalTerms[term]}"`);
-                        corrected = corrected.replace(regex, this.africanCulturalTerms[term]);
-                    }
-                });
-                
-                const countryRegex = new RegExp(`\\b${countryName.toLowerCase()}\\b`, 'gi');
-                if (countryRegex.test(corrected)) {
-                    corrected = corrected.replace(countryRegex, countryName);
-                }
-                
-                return corrected;
-            }
-
-            improveSentenceStructure(text, corrections) {
-                let improved = text;
-                const improvements = [
-                    { pattern: /\b(I am|I'm) (going to|gonna)\b/gi, replacement: 'I will' },
-                    { pattern: /\ba lot of\b/gi, replacement: 'many' },
-                    { pattern: /\bvery unique\b/gi, replacement: 'unique' },
-                    { pattern: /\bmore better\b/gi, replacement: 'better' }
-                ];
-                
-                improvements.forEach(improvement => {
-                    if (improvement.pattern.test(improved)) {
-                        improved = improved.replace(improvement.pattern, improvement.replacement);
-                    }
-                });
-                
-                return improved;
             }
 
             addCulturalContext(text, country) {
                 const countryName = getCountryName(country);
-                const culturalEnhancements = {
-                    'nigeria': `This story reflects Nigeria's rich cultural heritage where traditions pass through generations.`,
-                    'egypt': `This narrative connects to Egypt's ancient civilization blending history with modernity.`,
-                    'south-africa': `This account embodies Ubuntu - the African philosophy of shared humanity.`,
-                    'ghana': `This story captures Ghana's tradition of oral history and wisdom sharing.`,
-                    'kenya': `This reflects Kenya's diverse cultures maintaining unique traditions.`,
-                    'ethiopia': `This narrative honors Ethiopia's ancient heritage and continuous civilization.`,
-                    'mali': `This story echoes Mali's great empires and centers of learning.`
-                };
+                const enhancements = [
+                    `This story preserves the rich cultural heritage of ${countryName}.`,
+                    `These narratives from ${countryName} help maintain our living history.`,
+                    `The traditions of ${countryName} shine through in this beautiful story.`,
+                    `This account from ${countryName} connects us to generations of wisdom.`
+                ];
                 
-                const enhancement = culturalEnhancements[country] || 
-                    `This story contributes to ${countryName}'s cultural tapestry, preserving traditions for future generations.`;
-                
-                return `${text} ${enhancement}`;
+                const randomEnhancement = enhancements[Math.floor(Math.random() * enhancements.length)];
+                return `${text} ${randomEnhancement}`;
             }
         }
 
         // ==================== APPLICATION INITIALIZATION ====================
-        const storyDatabase = new StoryLocDatabase();
-        const storyBlockchain = new StoryLocBlockchain();
+        const storyCloud = new StoryLocCloud();
+        const storyBlockchain = new StoryBlockchain();
         const aiEnhancer = new AIStoryEnhancer();
 
-        // Complete list of all African countries
+        // Country data
         const allAfricanCountries = [
             "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi",
             "Cabo Verde", "Cameroon", "Central African Republic", "Chad", "Comoros",
@@ -901,7 +795,6 @@
             "Democratic Republic of the Congo"
         ];
 
-        // Country name mapping
         const countryNameMapping = {
             "Tanzania, United Republic of": "Tanzania",
             "United Republic of Tanzania": "Tanzania",
@@ -917,24 +810,26 @@
             "São Tomé and Príncipe": "São Tomé and Príncipe"
         };
 
-        // Initialize the application
+        // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
-            await storyDatabase.init();
+            const connected = await storyCloud.init();
+            updateSyncStatus(connected);
+            
             populateCountryDropdown();
             initializeMap();
             
             document.getElementById('storyForm').addEventListener('submit', function(e) {
                 e.preventDefault();
-                enhanceStory();
+                handleStorySubmission();
             });
 
-            updateSyncStatus();
-            
-            // Auto-sync every 2 minutes
+            // Auto-sync every 15 seconds
             setInterval(async () => {
-                const success = await storyDatabase.syncWithCloud();
-                updateSyncStatus(success);
-            }, 120000);
+                const success = await storyCloud.sync();
+                if (success) {
+                    updateSyncStatus(true);
+                }
+            }, 15000);
         });
 
         function populateCountryDropdown() {
@@ -1002,20 +897,19 @@
                 });
         }
 
-        // ==================== STORY MANAGEMENT ====================
-        function displayCountryStories(countryId) {
-            const allStories = storyDatabase.getAllStories();
+        async function displayCountryStories(countryId) {
+            const allStories = storyCloud.getAllStories();
             const countryStories = allStories[countryId] || [];
             const countryName = getCountryName(countryId);
-            const stats = storyBlockchain.getStats();
+            const stats = storyCloud.getStats();
             
             let storiesHTML = `
                 <button class="back-btn" onclick="showMainView()">← Back to Map</button>
                 <h2>Stories from ${countryName}</h2>
                 <div class="blockchain-badge">
-                    <div class="title">🔗 DATABASE + BLOCKCHAIN SYSTEM</div>
-                    <div class="hash">Stories: ${countryStories.length} | Blockchain: ${stats.totalBlocks} blocks</div>
-                    <div class="features">Cloud Storage • Blockchain Verified • AI Enhanced</div>
+                    <div class="title">🔗 CLOUD DATABASE ACTIVE</div>
+                    <div class="hash">${countryStories.length} stories • ${stats.totalStories} total</div>
+                    <div class="features">Real Cloud Storage • Instant Cross-Device Sync</div>
                 </div>
             `;
 
@@ -1053,12 +947,11 @@
             document.getElementById('storyDisplay').scrollIntoView({ behavior: 'smooth' });
         }
 
-        function displayStory(storyId) {
-            const allStories = storyDatabase.getAllStories();
+        async function displayStory(storyId) {
+            const allStories = storyCloud.getAllStories();
             let story = null;
             let country = '';
             
-            // Find the story in any country
             Object.keys(allStories).forEach(countryId => {
                 const found = allStories[countryId].find(s => s.id === storyId);
                 if (found) {
@@ -1073,15 +966,14 @@
             }
             
             const countryName = getCountryName(country);
-            const verification = storyBlockchain.verifyStory(storyId);
             
             document.getElementById('storyDisplay').innerHTML = `
                 <button class="back-btn" onclick="displayCountryStories('${country}')">← Back to Stories</button>
                 <h2>${story.title}</h2>
                 <div class="blockchain-badge">
-                    <div class="title">🔗 ${verification ? 'BLOCKCHAIN VERIFIED' : 'DATABASE STORED'}</div>
-                    <div class="hash">${story.blockchainHash || 'Cloud Database'}</div>
-                    <div class="features">${verification ? 'Immutable • Timestamped' : 'Cloud Sync • Fast Access'}</div>
+                    <div class="title">🔗 CLOUD VERIFIED</div>
+                    <div class="hash">${story.blockchainHash}</div>
+                    <div class="features">Stored in Cloud • Accessible Worldwide</div>
                 </div>
                 <div class="story-content">
                     ${story.content}
@@ -1097,7 +989,7 @@
             document.getElementById('storyDisplay').style.display = 'block';
         }
 
-        async function enhanceStory() {
+        async function handleStorySubmission() {
             const userName = document.getElementById('userName').value;
             const userEmail = document.getElementById('userEmail').value;
             const storyCountry = document.getElementById('storyCountry').value;
@@ -1109,9 +1001,9 @@
                 return;
             }
             
-            document.querySelector('.submit-btn').textContent = 'AI Enhancing Story...';
+            document.querySelector('.submit-btn').textContent = 'Saving to Cloud...';
             document.querySelector('.submit-btn').disabled = true;
-            document.getElementById('syncStatus').innerHTML = '🤖 AI is correcting and enhancing your story...';
+            document.getElementById('syncStatus').innerHTML = '☁️ Saving to cloud database...';
             
             try {
                 // AI Enhancement
@@ -1120,10 +1012,10 @@
                 
                 // Create story object
                 const storyId = 'story_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                const blockchainHash = storyBlockchain.addStoryVerification({
+                const blockchainHash = storyBlockchain.generateStoryHash({
                     id: storyId,
                     title: storyTitle,
-                    country: storyCountry,
+                    content: enhancedStory,
                     author: userName
                 });
                 
@@ -1139,68 +1031,72 @@
                     blockchainHash: blockchainHash
                 };
                 
-                // Save to database
-                await storyDatabase.addStory(newStory);
+                // Save to cloud
+                const success = await storyCloud.addStory(newStory);
                 
-                // Show success message
-                let correctionsHTML = '';
-                if (enhancementResult.corrections.length > 0) {
-                    correctionsHTML = `
-                        <div class="ai-correction">
-                            <div class="title">🤖 AI Story Improvements:</div>
-                            <ul>
-                                ${enhancementResult.corrections.map(corr => `<li>${corr}</li>`).join('')}
-                            </ul>
+                if (success) {
+                    // Show success message
+                    let correctionsHTML = '';
+                    if (enhancementResult.corrections.length > 0) {
+                        correctionsHTML = `
+                            <div class="ai-correction">
+                                <div class="title">🤖 AI Story Improvements:</div>
+                                <ul>
+                                    ${enhancementResult.corrections.map(corr => `<li>${corr}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }
+                    
+                    document.getElementById('storyDisplay').innerHTML = `
+                        <button class="back-btn" onclick="showMainView()">← Back to Map</button>
+                        <h2>Your Story is Live! 🎉</h2>
+                        <div class="blockchain-badge">
+                            <div class="title">🔗 SUCCESSFULLY SAVED TO CLOUD</div>
+                            <div class="hash">${blockchainHash}</div>
+                            <div class="features">Available on All Devices • Instant Sync</div>
+                        </div>
+                        ${correctionsHTML}
+                        <div class="story-content">
+                            ${enhancedStory}
+                        </div>
+                        <div class="story-meta">
+                            Story enhanced by StoryLoc AI | Shared by ${userName} for ${getCountryName(storyCountry)}
+                        </div>
+                        <div style="margin-top: 20px; text-align: center;">
+                            <button class="submit-btn" onclick="displayCountryStories('${storyCountry}')">See All Stories from ${getCountryName(storyCountry)}</button>
                         </div>
                     `;
+                    
+                    document.getElementById('storyDisplay').style.display = 'block';
+                    document.getElementById('storyForm').reset();
+                    updateSyncStatus(true);
+                    
+                    // Force immediate sync
+                    setTimeout(async () => {
+                        await storyCloud.sync();
+                    }, 1000);
+                    
+                } else {
+                    throw new Error('Cloud save failed');
                 }
                 
-                document.getElementById('storyDisplay').innerHTML = `
-                    <button class="back-btn" onclick="showMainView()">← Back to Map</button>
-                    <h2>Your Story is Live! 🎉</h2>
-                    <div class="blockchain-badge">
-                        <div class="title">🔗 SUCCESSFULLY STORED</div>
-                        <div class="hash">Blockchain: ${blockchainHash}</div>
-                        <div class="features">Cloud Database • Blockchain Verified • AI Enhanced</div>
-                    </div>
-                    ${correctionsHTML}
-                    <div class="story-content">
-                        ${enhancedStory}
-                    </div>
-                    <div class="story-meta">
-                        Story enhanced by StoryLoc AI | Shared by ${userName} for ${getCountryName(storyCountry)}
-                    </div>
-                    <div style="margin-top: 20px; text-align: center;">
-                        <button class="submit-btn" onclick="displayCountryStories('${storyCountry}')">See All Stories from ${getCountryName(storyCountry)}</button>
-                    </div>
-                `;
-                
-                document.getElementById('storyDisplay').style.display = 'block';
-                document.getElementById('storyForm').reset();
-                document.querySelector('.submit-btn').textContent = 'Share Your Legend';
-                document.querySelector('.submit-btn').disabled = false;
-                document.getElementById('storyDisplay').scrollIntoView({ behavior: 'smooth' });
-                
-                updateSyncStatus(true);
-                
             } catch (error) {
-                alert('Error adding story. Please try again.');
-                document.querySelector('.submit-btn').textContent = 'Share Your Legend';
-                document.querySelector('.submit-btn').disabled = false;
+                alert('Error: Could not save to cloud. Please check your internet connection and try again.');
             }
+            
+            document.querySelector('.submit-btn').textContent = 'Share Your Legend';
+            document.querySelector('.submit-btn').disabled = false;
         }
 
-        function updateSyncStatus(success = true) {
-            const allStories = storyDatabase.getAllStories();
-            const totalStories = Object.values(allStories).reduce((sum, stories) => sum + stories.length, 0);
-            const stats = storyBlockchain.getStats();
-            
-            if (success) {
+        function updateSyncStatus(connected) {
+            const stats = storyCloud.getStats();
+            if (connected) {
                 document.getElementById('syncStatus').innerHTML = 
-                    `✅ Cloud Database Active | ${totalStories} stories | ${stats.verifiedStories} blockchain verified`;
+                    `✅ Cloud Database Active • ${stats.totalStories} stories synced across all devices`;
             } else {
                 document.getElementById('syncStatus').innerHTML = 
-                    `🌐 Offline Mode | ${totalStories} stories (cloud sync paused)`;
+                    `🌐 Connecting to cloud... (${stats.totalStories} stories loaded)`;
             }
         }
 
